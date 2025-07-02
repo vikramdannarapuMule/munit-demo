@@ -1,0 +1,53 @@
+<?xml version="1.0" ?>
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xsi:schemaLocation="     http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd     http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd     http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd     http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+  <munit:config name="test_suite_app_a_flow_1750884.xml"/>
+  <munit:test name="test_suite_app_a_flow_0" description="Test the choice when condition - flow parameter equals 'a', should route to flow-a subflow">
+    <!-- BEHAVIOR: Setting up the HTTP event with query parameter 'flow=a' to trigger the choice condition -->
+    <munit:behavior>
+      <munit:set-event doc:name="Set HTTP Event">
+        <munit:payload value="{}" mediaType="application/json" encoding="UTF-8"/>
+        <munit:attributes value="#[{                 'queryParams': {                     'flow': 'a'                 },                 'headers': {                     'content-type': 'application/json'                 },                 'method': 'GET',                 'requestPath': '/app-a',                 'requestUri': '/app-a?flow=a'             }]"/>
+      </munit:set-event>
+    </munit:behavior>
+    <!-- EXECUTION: Running the app-aFlow to test the routing logic -->
+    <munit:execution>
+      <flow-ref name="app-aFlow" doc:name="Execute app-aFlow"/>
+    </munit:execution>
+    <!-- VALIDATION: Verifying that the flow routes correctly to flow-a and returns the expected response -->
+    <munit:validation>
+      <!-- Verify the payload matches the expected response from Flow A -->
+      <munit-tools:assert-that doc:name="Assert payload response from Flow A" expression="#[payload.response]" is="#[MunitTools::equalTo('Response from Flow A')]"/>
+      <!-- Verify that the ee:transform in flow-a was called -->
+      <munit-tools:verify-call doc:name="Verify Transform Message in flow-a was called" processor="ee:transform">
+        <munit-tools:with-attributes>
+          <munit-tools:with-attribute attributeName="doc:name" whereValue="Transform Message"/>
+          <munit-tools:with-attribute attributeName="doc:id" whereValue="c3f55586-ea4a-49df-b5db-a6a8c3e356a3"/>
+        </munit-tools:with-attributes>
+      </munit-tools:verify-call>
+    </munit:validation>
+  </munit:test>
+  <munit:test name="test_suite_app_a_flow_1" description="Test the choice otherwise condition - flow parameter not equals 'a', should route to flow-b subflow">
+    <!-- Set up the HTTP event with query parameter 'flow' not equal to 'a' -->
+    <munit:behavior>
+      <munit:set-event doc:name="Set Event with query parameter">
+        <munit:payload value="{}" mediaType="application/json" encoding="UTF-8"/>
+        <munit:attributes value="#[output application/java --- {                 'queryParams': {                     'flow': 'b'                 },                 'method': 'GET',                 'requestUri': '/app-a?flow=b',                 'scheme': 'HTTP',                 'version': 'HTTP/1.1',                 'headers': {},                 'listenerPath': '/app-a'             }]"/>
+      </munit:set-event>
+    </munit:behavior>
+    <!-- Execute the flow -->
+    <munit:execution>
+      <flow-ref doc:name="Execute app-aFlow" name="app-aFlow"/>
+    </munit:execution>
+    <!-- Validate the results -->
+    <munit:validation>
+      <!-- Verify that the transform component in flow-b was called -->
+      <munit-tools:verify-call doc:name="Verify Transform Message1 was called" processor="ee:transform">
+        <munit-tools:with-attributes>
+          <munit-tools:with-attribute attributeName="doc:name" whereValue="Transform Message1"/>
+        </munit-tools:with-attributes>
+      </munit-tools:verify-call>
+      <!-- Verify the payload contains the expected response -->
+      <munit-tools:assert-that doc:name="Assert response from Flow B" expression="#[payload.response]" is="#[MunitTools::equalTo('Response from Flow B')]" message="The response should be from Flow B"/>
+    </munit:validation>
+  </munit:test>
+</mule>
